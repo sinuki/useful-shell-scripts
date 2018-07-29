@@ -1,0 +1,86 @@
+#!/bin/bash
+
+PROGRAM_NAME="mass-iconv"
+PROGRAM_VERSION="1.0.0"
+DEFAULT_SHELL_PATH="/usr/bin"
+
+help()
+{
+	echo "[Available Commands]"
+	echo ""
+	echo "-v : show version."
+	echo "-p : indicate file path or directory path. *default path is current location. ex) mass-iconv -p /home/user"
+	echo "-o : output encoding. *default encoding is system encoding. ex) mass-iconv -p /home/user -o euc-kr"
+}
+
+PATH=`pwd`
+TARGET_ENCODING=`echo $LANG | "$DEFAULT_SHELL_PATH"/cut -d '.' -f 2`
+PROCEED_FLAG="1"
+
+while getopts v,h,p:o: opt
+do
+	case $opt in
+		v)
+			echo "A $PROGRAM_NAME version is $PROGRAM_VERSION."
+			PROCEED_FLAG="0"
+			break
+			;;
+		h)
+			help
+			PROCEED_FLAG="0"
+			break
+			;;
+		p)
+			PATH="$OPTARG"
+			;;
+		o)
+			TARGET_ENCODING="$OPTARG"
+			;;
+		*)
+			echo "It is not supprted command. Please, try to run $PROGRAM_NAME -h"
+			break
+			;;
+	esac
+done
+
+#echo "path : $PATH"
+#echo "output encoding : $TARGET_ENCODING"
+
+convert_encoding()
+{
+	FILE_ENCODING=`"$DEFAULT_SHELL_PATH"/file --mime "$PATH" | "$DEFAULT_SHELL_PATH"/cut -d '=' -f 2`
+
+	# us-ascii is subset of UTF-8
+	if [ "us-ascii" = "$FILE_ENCODING" ];
+	then 
+		FILE_ENCODING="UTF-8"
+		echo "converting : $FILE_ENCODING (us-ascii) -> $TARGET_ENCODING"
+	else
+		echo "converting : $FILE_ENCODING -> $TARGET_ENCODING"
+	fi
+	
+	DIR_NAME=`"$DEFAULT_SHELL_PATH"/dirname "$PATH"`
+	FULL_FILE_NAME=`"$DEFAULT_SHELL_PATH"/basename "$PATH"`
+	FILE_NAME="${FULL_FILE_NAME%.*}"
+	FILE_EXTENSION="${FULL_FILE_NAME##*.}"
+
+	"$DEFAULT_SHELL_PATH"/iconv -c -f "$FILE_ENCODING" -t "$TARGET_ENCODING" "$PATH" > "$DIR_NAME"/"$FILE_NAME"_"$TARGET_ENCODING"."$FILE_EXTENSION"
+}
+
+
+if [ "$PROCEED_FLAG" = "1" ];
+then
+	if [ -d "$PATH" ];
+	then
+		FILE_NAMES=$(/bin/ls "$PATH")
+		ORIGIN_PATH="$PATH"
+
+		for FILE_NAME in $FILE_NAMES
+		do
+			PATH="$ORIGIN_PATH/$FILE_NAME"
+			convert_encoding
+		done
+	else
+		convert_encoding
+	fi
+fi
