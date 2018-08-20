@@ -37,7 +37,7 @@ do
 			TARGET_ENCODING="$OPTARG"
 			;;
 		*)
-			echo "It is not supprted command. Please, try to run $PROGRAM_NAME -h"
+			echo "It is not supported command. Please, try to run $PROGRAM_NAME -h"
 			break
 			;;
 	esac
